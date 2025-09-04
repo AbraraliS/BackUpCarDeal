@@ -716,7 +716,9 @@
                                                     <i class="fas fa-edit"></i> Edit
                                                 </a>
                                                 <%if ("active".equals(carStatus)) {%>
-                                                    <button class="btn btn-warning btn-sm" onclick="markAsSold(<%=rs.getInt("id")%>)">
+                                                    <button class="btn btn-warning btn-sm" 
+                                                            data-car-id="<%=rs.getInt("id")%>" 
+                                                            onclick="markAsSold(this.getAttribute('data-car-id'))">
                                                         <i class="fas fa-check"></i> Mark as Sold
                                                     </button>
                                                 <%}%>
