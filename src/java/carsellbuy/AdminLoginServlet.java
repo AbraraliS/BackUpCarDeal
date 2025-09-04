@@ -1,9 +1,10 @@
 package carsellbuy;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.sql.*;
-
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -11,78 +12,54 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import carsellbuy.DbConnection;
-
 @WebServlet("/AdminLogin")
 public class AdminLoginServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
 
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.sendRedirect("AdminLogin.jsp");
     }
 
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        DbConnection db = new DbConnection();
-        PrintWriter out = response.getWriter();
-
         String email = request.getParameter("ademail");
         String password = request.getParameter("adpassword");
 
-        System.out.println("User Email:\t" + request.getParameter("ademail"));
-        System.out.println("User Password:\t" + request.getParameter("adpassword"));
+        String sql = "SELECT * FROM admins WHERE Email = ?";
+        
+        try (Connection con = DataSource.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql)) {
 
-        try {
-            Connection con = db.makeConnection();
-            if (con != null) {
-                System.out.print("Connection Successfull");
-
-                // Execute SQL query
-                Statement st = con.createStatement();
-                String sql;
-                sql = "SELECT * FROM admins WHERE Email='" + email + "'";
-                ResultSet rs = st.executeQuery(sql);
-
-                // Extract data from result set
-                if (!rs.isBeforeFirst()) {
-                    out.println("Email ID Not found: \t" + email);
-                } else {
-                    while (rs.next()) {
-                        int adminID = rs.getInt("AdminID");
-                        String name = rs.getString("Username");
-                        String remail = rs.getString("Email");
-                        String rpassword = rs.getString("Password");
-//                        String fname = rs.getString("FirstName");
-//                        String lname = rs.getString("LastName");
-//                        int phone = rs.getInt("Phone");
-//        String subType = rs.getString("subType");
-//        String pincd = rs.getString("pincd");
-//UserID, Username, Password, Email, FirstName, LastName, Address, City, State, Phone
-                        // Check for password 
-                        if (password.equals(rpassword)) {
-                            session.setAttribute("AdminID", adminID);
-                            session.setAttribute("Username", name);
-                            session.setAttribute("Email", remail);
-                            session.setAttribute("Password", rpassword);
-//                            session.setAttribute("FirstName", fname);
-//                            session.setAttribute("LastName", lname);
-//                            session.setAttribute("Phone", phone);
-
-                            response.sendRedirect("AdminPanel.jsp");
-                            System.out.println("LoginSuccess");
-                        } else {
-                            out.println("Invalid Password");
-                            response.sendRedirect("AdminLogin.jsp");
-                        }
-
+            pst.setString(1, email);
+            
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    String dbPassword = rs.getString("Password");
+                    if (password.equals(dbPassword)) {
+                        HttpSession session = request.getSession();
+                        session.setAttribute("AdminID", rs.getInt("AdminID"));
+                        session.setAttribute("Username", rs.getString("Username"));
+                        session.setAttribute("Email", rs.getString("Email"));
+                        response.sendRedirect("AdminPanel.jsp");
+                    } else {
+                        // Invalid password
+                        request.setAttribute("errorMessage", "Invalid credentials. Please try again.");
+                        request.getRequestDispatcher("AdminLogin.jsp").forward(request, response);
                     }
+                } else {
+                    // User not found
+                    request.setAttribute("errorMessage", "Invalid credentials. Please try again.");
+                    request.getRequestDispatcher("AdminLogin.jsp").forward(request, response);
                 }
-
             }
-        } catch (Exception e) {
-            System.out.println("Error 00" + e);
+        } catch (SQLException e) {
+            // Log the exception
+            e.printStackTrace();
+            // Show a generic error page
+            request.setAttribute("errorMessage", "A database error occurred. Please try again later.");
+            request.getRequestDispatcher("AdminLogin.jsp").forward(request, response);
         }
-
     }
 }

@@ -3,23 +3,14 @@ package carsellbuy;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import carsellbuy.DbConnection;
-import java.io.File;
-import static java.lang.System.out;
-import java.sql.SQLException;
-import org.apache.tomcat.util.http.fileupload.FileItem;
-import org.apache.tomcat.util.http.fileupload.RequestContext;
-import org.apache.tomcat.util.http.fileupload.disk.DiskFileItemFactory;
-import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
-
-;
+import javax.servlet.http.HttpSession;
 
 @WebServlet("/sellcar")
 public class SellCarServlet extends HttpServlet {
@@ -33,12 +24,13 @@ public class SellCarServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        DbConnection db = new DbConnection();
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("UserID") == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
 
-
-
-//        String uid = request.getParameter("uid");
-         String uid = request.getParameter("gusid");
+        String uid = session.getAttribute("UserID").toString();
         String carname = request.getParameter("cname");
         String regyear = request.getParameter("regye");
         String kmdrive = request.getParameter("kmdrive");
@@ -49,24 +41,35 @@ public class SellCarServlet extends HttpServlet {
         String discrip = request.getParameter("cardes");
         String photo = request.getParameter("photos");
 
-        try {
-            Connection con = db.makeConnection();
-            if (con != null) {
-                System.out.print("Connection Successfull...\t");
+        String sql = "INSERT INTO cars2 (Car2Name, Reg2Year, KM2Driven, Price2, CarBrand2, Model2, Variant2, Owner2, Description2, Photos2) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-                // Execute SQL query
-                String sql;
-                sql = "INSERT INTO cars2 (Car2Name, Reg2Year, KM2Driven, Price2, CarBrand2, Model2, Variant2, Owner2, Description2, Photos2) VALUES ('" + carname + "', '" + regyear + "', '" + kmdrive + "', '" + price + "', '" + brand + "', '" + model + "', '" + varty + "', '"+ uid + "', '" + discrip + "','" +"image/"+ photo + "')";
-                PreparedStatement st = con.prepareStatement(sql);
-                st.executeUpdate();
-           
-                response.sendRedirect("SellCar2.jsp");
+        try (Connection con = DataSource.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql)) {
+
+            pst.setString(1, carname);
+            pst.setString(2, regyear);
+            pst.setString(3, kmdrive);
+            pst.setString(4, price);
+            pst.setString(5, brand);
+            pst.setString(6, model);
+            pst.setString(7, varty);
+            pst.setString(8, uid);
+            pst.setString(9, discrip);
+            pst.setString(10, "image/" + photo);
+
+            int result = pst.executeUpdate();
+
+            if (result > 0) {
+                request.setAttribute("successMessage", "Car listed successfully!");
+                request.getRequestDispatcher("/SellCar2.jsp").forward(request, response);
+            } else {
+                request.setAttribute("errorMessage", "Failed to list car. Please try again.");
+                request.getRequestDispatcher("/SellCar2.jsp").forward(request, response);
             }
-        } catch (IOException | ClassNotFoundException | SQLException e) {
-            System.out.println("Something went wrong....." + e);
-            response.sendRedirect("SellCar2.jsp");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.setAttribute("errorMessage", "A database error occurred. Please try again later.");
+            request.getRequestDispatcher("/SellCar2.jsp").forward(request, response);
         }
-
     }
-
 }

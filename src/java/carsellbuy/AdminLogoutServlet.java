@@ -1,7 +1,6 @@
 package carsellbuy;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -11,15 +10,14 @@ import javax.servlet.http.HttpSession;
 
 @WebServlet("/AdminLogout")
 public class AdminLogoutServlet extends HttpServlet {
-	private static final long serialVersionUID = 1L;
-       
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		HttpSession session = request.getSession();
-		session.removeAttribute("adminID");
-		session.removeAttribute("remail");
-		session.removeAttribute("name");
-		session.invalidate();
-		response.sendRedirect("AdminLogin.jsp");
-                System.out.println("Logout");
-	}
+    private static final long serialVersionUID = 1L;
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession(false); // Do not create a new session
+        if (session != null) {
+            session.invalidate();
+        }
+        response.sendRedirect("AdminLogin.jsp");
+    }
 }

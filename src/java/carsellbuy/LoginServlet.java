@@ -1,8 +1,10 @@
 package carsellbuy;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -11,86 +13,59 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import carsellbuy.DbConnection;
-
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
 
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.sendRedirect("login.jsp");
     }
 
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        DbConnection db = new DbConnection();
-        PrintWriter out = response.getWriter();
-
         String email = request.getParameter("email");
         String password = request.getParameter("password");
 
-        System.out.println("User Email:\t" + request.getParameter("email"));
-        System.out.println("User Password:\t" + request.getParameter("password"));
+        String sql = "SELECT * FROM users WHERE Email = ?";
 
-        try {
-            Connection con = db.makeConnection();
-            if (con != null) {
-                System.out.print("Connection Successfull");
+        try (Connection con = DataSource.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql)) {
 
-                // Execute SQL query
-                Statement st = con.createStatement();
-                String sql;
-                sql = "SELECT * FROM users WHERE Email='" + email + "'";
-                ResultSet rs = st.executeQuery(sql);
+            pst.setString(1, email);
 
-                // Extract data from result set
-                if (!rs.isBeforeFirst()) {
-                    out.println("Email ID Not found: \t" + email);
-                } else {
-                    while (rs.next()) {
-                        int user_id = rs.getInt("UserID");
-                        String name = rs.getString("Username");
-                        String remail = rs.getString("Email");
-                        String rpassword = rs.getString("Password");
-
-                        String fname = rs.getString("FirstName");
-                        String lname = rs.getString("LastName");
-
-                        String addrs = rs.getString("Address");
-                        String city = rs.getString("City");
-                        String state = rs.getString("State");
-                        long phone = rs.getLong("Phone");
-                        String subType = rs.getString("SubscriptionTypeID");
-//        String pincd = rs.getString("pincd");
-//UserID, Username, Password, Email, FirstName, LastName, Address, City, State, Phone
-                        // Check for password 
-                        if (password.equals(rpassword)) {
-                            session.setAttribute("UserID", user_id);
-                            session.setAttribute("Username", name);
-                            session.setAttribute("Email", remail);
-                            session.setAttribute("Password", rpassword);
-                            session.setAttribute("FirstName", fname);
-                            session.setAttribute("LastName", lname);
-                            session.setAttribute("Address", addrs);
-                            session.setAttribute("City", city);
-                            session.setAttribute("State", state);
-                            session.setAttribute("Phone", phone);
-                            session.setAttribute("SubscriptionTypeID", subType);
-                            response.sendRedirect("index.jsp");
-                            System.out.println("LoginSuccess");
-                        } else {
-                            out.println("Invalid Password");
-                            response.sendRedirect("login");
-                        }
-
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    String dbPassword = rs.getString("Password");
+                    if (password.equals(dbPassword)) {
+                        HttpSession session = request.getSession();
+                        session.setAttribute("UserID", rs.getInt("UserID"));
+                        session.setAttribute("Username", rs.getString("Username"));
+                        session.setAttribute("Email", rs.getString("Email"));
+                        session.setAttribute("FirstName", rs.getString("FirstName"));
+                        session.setAttribute("LastName", rs.getString("LastName"));
+                        session.setAttribute("Address", rs.getString("Address"));
+                        session.setAttribute("City", rs.getString("City"));
+                        session.setAttribute("State", rs.getString("State"));
+                        session.setAttribute("Phone", rs.getLong("Phone"));
+                        session.setAttribute("SubscriptionTypeID", rs.getString("SubscriptionTypeID"));
+                        response.sendRedirect("index.jsp");
+                    } else {
+                        // Invalid password
+                        request.setAttribute("errorMessage", "Invalid credentials. Please try again.");
+                        request.getRequestDispatcher("login.jsp").forward(request, response);
                     }
+                } else {
+                    // User not found
+                    request.setAttribute("errorMessage", "Invalid credentials. Please try again.");
+                    request.getRequestDispatcher("login.jsp").forward(request, response);
                 }
-
             }
-        } catch (Exception e) {
-            System.out.println("Error 00" + e);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.setAttribute("errorMessage", "A database error occurred. Please try again later.");
+            request.getRequestDispatcher("login.jsp").forward(request, response);
         }
-
     }
 }

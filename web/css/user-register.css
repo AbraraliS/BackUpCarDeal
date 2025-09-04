@@ -1,0 +1,43 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+}
+
+.container1 {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 8vh;
+    background-color: #ffffff;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+label {
+    font-weight: bold;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="tel"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.subm {
+    background-color: #04AA6D;
+    color: #ffffff;
+    border: none;
+    padding: 10px 30px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 18px;
+    text-decoration: none;
+}
+
+.subm:hover {
+    opacity: 0.8;
+}

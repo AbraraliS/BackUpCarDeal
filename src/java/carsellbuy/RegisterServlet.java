@@ -3,18 +3,13 @@ package carsellbuy;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import carsellbuy.DbConnection;
-import static java.lang.System.out;
-import java.sql.SQLException;
-
-;
 
 @WebServlet("/register")
 public class RegisterServlet extends HttpServlet {
@@ -28,9 +23,6 @@ public class RegisterServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        DbConnection db = new DbConnection();
-
-//        String uid = request.getParameter("uid");
         String uname = request.getParameter("uname");
         String fname = request.getParameter("fname");
         String lname = request.getParameter("lname");
@@ -40,40 +32,36 @@ public class RegisterServlet extends HttpServlet {
         String city = request.getParameter("city");
         String state = request.getParameter("state");
         String phone = request.getParameter("phone");
-//        String subType = request.getParameter("subType");
-//        String pincd = request.getParameter("pincd");
 
-//        System.out.println("User name:\t" + request.getParameter("uid"));
-        System.out.println("User name:\t" + request.getParameter("name"));
-        System.out.println("User email:\t" + request.getParameter("fname"));
-        System.out.println("User password:\t" + request.getParameter("lname"));
-        System.out.println("User password:\t" + request.getParameter("email"));
-        System.out.println("User password:\t" + request.getParameter("passwd"));
-        System.out.println("User password:\t" + request.getParameter("addrs"));
-        System.out.println("User password:\t" + request.getParameter("city"));
-        System.out.println("User password:\t" + request.getParameter("state"));
-        System.out.println("User password:\t" + request.getParameter("phone"));
-//        System.out.println("User password:\t" + request.getParameter("subType"));
-//        System.out.println("User password:\t" + request.getParameter("pincd"));
+        String sql = "INSERT INTO users (Username, Password, Email, FirstName, LastName, Address, City, State, Phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try {
-            Connection con = db.makeConnection();
-            if (con != null) {
-                System.out.print("Connection Successfull...\t");
+        try (Connection con = DataSource.getConnection();
+             PreparedStatement pst = con.prepareStatement(sql)) {
 
-                // Execute SQL query
-                String sql;
-                sql = "INSERT INTO users (Username, Password, Email, FirstName, LastName, Address, City, State, Phone) VALUES ('" + uname + "', '" + passwd + "', '" + email + "', '" + fname + "', '" + lname + "', '" + addrs + "', '" + city + "', '" + state + "', '" + phone + "')";
-                PreparedStatement st = con.prepareStatement(sql);
-                st.executeUpdate();
-                
-                response.sendRedirect("userRegister.jsp");  
-            } 
-        } catch (IOException | ClassNotFoundException | SQLException e) {
-            System.out.println("Something went wrong....."+e);
-            response.sendRedirect("userRegister.jsp");
+            pst.setString(1, uname);
+            pst.setString(2, passwd);
+            pst.setString(3, email);
+            pst.setString(4, fname);
+            pst.setString(5, lname);
+            pst.setString(6, addrs);
+            pst.setString(7, city);
+            pst.setString(8, state);
+            pst.setString(9, phone);
+
+            int result = pst.executeUpdate();
+
+            if (result > 0) {
+                request.setAttribute("successMessage", "Registration successful! Please login.");
+                request.getRequestDispatcher("/login.jsp").forward(request, response);
+            } else {
+                request.setAttribute("errorMessage", "Registration failed. Please try again.");
+                request.getRequestDispatcher("/userRegister.jsp").forward(request, response);
+            }
+        } catch (SQLException e) {
+            // Log and show a generic error
+            e.printStackTrace(); // Or use a logging framework
+            request.setAttribute("errorMessage", "A database error occurred. Please try again later.");
+            request.getRequestDispatcher("/userRegister.jsp").forward(request, response);
         }
-
     }
-
 }
