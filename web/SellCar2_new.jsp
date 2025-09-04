@@ -20,7 +20,7 @@
     
     <!-- SEO Meta Tags -->
     <meta name="description" content="Sell your car easily with CarDeal. Create a detailed listing and reach thousands of potential buyers.">
-    <meta name="keywords" content="sell car, car listing, automotive marketplace, sell vehicle">
+    <meta name="keywords" content="sell car, car    , automotive marketplace, sell vehicle">
     <meta name="author" content="CarDeal Team">
     
     <!-- Favicon -->
